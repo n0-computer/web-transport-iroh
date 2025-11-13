@@ -41,13 +41,10 @@ pub use session::*;
 /// The HTTP/3 ALPN is required when negotiating a QUIC connection.
 pub const ALPN: &str = "h3";
 
-/// Re-export the underlying QUIC implementation.
-pub use quinn;
-
 /// Re-export the http crate because it's in the public API.
 pub use http;
-
+pub use iroh;
+/// Re-export the underlying QUIC implementation.
+pub use quinn;
 /// Re-export the generic WebTransport implementation.
 pub use web_transport_trait as generic;
-
-pub use iroh;

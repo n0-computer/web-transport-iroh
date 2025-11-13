@@ -1,12 +1,10 @@
-use std::sync::Arc;
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
-use iroh::endpoint::ConnectOptions;
-use iroh::{EndpointAddr, EndpointId, SecretKey};
+use iroh::{EndpointAddr, EndpointId, SecretKey, endpoint::ConnectOptions};
 use quinn::TransportConfig;
 use url::Url;
 
-use crate::{ClientError, Session, ALPN};
+use crate::{ALPN, ClientError, Session};
 
 // Copies the Web options, hiding the actual implementation.
 /// Allows specifying a class of congestion control algorithm.

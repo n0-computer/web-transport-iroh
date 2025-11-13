@@ -1,20 +1,19 @@
 use std::{
     fmt,
-    future::{poll_fn, Future},
+    future::{Future, poll_fn},
     io::Cursor,
     ops::Deref,
     pin::Pin,
     sync::{Arc, Mutex},
-    task::{ready, Context, Poll},
+    task::{Context, Poll, ready},
 };
 
 use bytes::{Bytes, BytesMut};
 use n0_future::{FuturesUnordered, Stream, StreamExt};
 use url::Url;
+use web_transport_proto::{Frame, StreamUni, VarInt};
 
 use crate::{RecvStream, SendStream, SessionError, WebTransportError};
-
-use web_transport_proto::{Frame, StreamUni, VarInt};
 
 /// An established WebTransport session, acting like a full QUIC connection. See [`iroh::endpoint::Connection`].
 ///

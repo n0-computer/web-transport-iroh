@@ -1,11 +1,11 @@
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
-use crate::{CongestionControl, ServerError, Session};
-
-use iroh::{endpoint, Endpoint, EndpointId};
-use n0_future::{boxed::BoxFuture, StreamExt};
+use iroh::{Endpoint, EndpointId, endpoint};
+use n0_future::{StreamExt, boxed::BoxFuture};
 use quinn::TransportConfig;
 use url::Url;
+
+use crate::{CongestionControl, ServerError, Session};
 
 /// Construct a WebTransport [Server] using sane defaults.
 ///

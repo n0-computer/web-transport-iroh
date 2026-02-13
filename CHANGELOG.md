@@ -1,6 +1,12 @@
 # Changelog
 
-## [0.2.0](https://github.com/n0-computer/web-transport-iroh/compare/v0.1.1..0.2.0) - 2026-02-13
+## [0.2.1](https://github.com/n0-computer/web-transport-iroh/compare/v0.2.0..0.2.1) - 2026-02-13
+
+### Deps
+
+- Set correct minimal version of web-transport-trait - ([1262f9d](https://github.com/n0-computer/web-transport-iroh/commit/1262f9d4cb7855f31b50bbc59177479cab417986))
+
+## [0.2.0](https://github.com/n0-computer/web-transport-iroh/compare/v0.1.1..v0.2.0) - 2026-02-13
 
 ### 🚜 Refactor
 

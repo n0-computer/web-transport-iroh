@@ -1,9 +1,8 @@
 use std::ops::Deref;
 
 use iroh::endpoint::Connection;
-use web_transport_proto::{ConnectRequest, ConnectResponse, VarInt};
-
 use thiserror::Error;
+use web_transport_proto::{ConnectRequest, ConnectResponse, VarInt};
 
 #[derive(Error, Debug, Clone)]
 pub enum ConnectError {

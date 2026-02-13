@@ -14,12 +14,11 @@ use n0_future::{
     FuturesUnordered,
     stream::{Stream, StreamExt},
 };
+use web_transport_proto::{ConnectRequest, ConnectResponse, Frame, StreamUni, VarInt};
 
 use crate::{
     ClientError, Connected, RecvStream, SendStream, SessionError, Settings, WebTransportError,
 };
-
-use web_transport_proto::{ConnectRequest, ConnectResponse, Frame, StreamUni, VarInt};
 
 /// An established WebTransport session, acting like a full QUIC connection. See [`iroh::endpoint::Connection`].
 ///

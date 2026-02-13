@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
-use iroh::endpoint::QuicTransportConfig;
-use iroh::{EndpointAddr, endpoint::ConnectOptions};
+use iroh::{
+    EndpointAddr,
+    endpoint::{ConnectOptions, QuicTransportConfig},
+};
 use url::Url;
 
 use crate::{ALPN_H3, ClientError, Session};

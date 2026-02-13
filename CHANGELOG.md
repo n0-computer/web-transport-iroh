@@ -18,6 +18,7 @@
 - Clippy - ([fd04c55](https://github.com/n0-computer/web-transport-iroh/commit/fd04c5587500253cf8a74b26c3e234078b30d734))
 - Align imports - ([51d4bb3](https://github.com/n0-computer/web-transport-iroh/commit/51d4bb3891d5ee830691af95ecb879218c2b35b3))
 - Fixup license files - ([681733d](https://github.com/n0-computer/web-transport-iroh/commit/681733dccdcafc507f5f00004fdeb6f7e9087a61))
+- Prepare 0.2.0 release and add changelog - ([5cff5ad](https://github.com/n0-computer/web-transport-iroh/commit/5cff5adcc10345041165bf2a87078635b4945a13))
 
 ### Deps
 

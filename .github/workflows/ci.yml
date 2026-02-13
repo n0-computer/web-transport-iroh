@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: taiki-e/install-action@cargo-make
+
+      - name: Cargo check
+        run: cargo check --all-features --workspace --examples --tests
+
+      - name: Cargo test
+        run: cargo test --workspace
+
+      - name: cargo clippy
+        run: cargo clippy --locked --workspace --all-targets --all-features
+
+      - run: cargo make format-check

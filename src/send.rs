@@ -80,10 +80,12 @@ impl SendStream {
         self.stream.finish().map_err(Into::into)
     }
 
+    /// Set the stream's priority. See [`iroh::endpoint::SendStream::set_priority`].
     pub fn set_priority(&self, order: i32) -> Result<(), ClosedStream> {
         self.stream.set_priority(order).map_err(Into::into)
     }
 
+    /// Returns the stream's current priority. See [`iroh::endpoint::SendStream::priority`].
     pub fn priority(&self) -> Result<i32, ClosedStream> {
         self.stream.priority().map_err(Into::into)
     }

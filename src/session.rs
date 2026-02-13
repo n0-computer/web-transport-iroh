@@ -25,7 +25,7 @@ use crate::{
 /// It is important to remember that WebTransport is layered on top of QUIC:
 ///   1. Each stream starts with a few bytes identifying the stream type and session ID.
 ///   2. Errors codes are encoded with the session ID, so they aren't full QUIC error codes.
-///   3. Stream IDs may have gaps in them, used by HTTP/3 transparant to the application.
+///   3. Stream IDs may have gaps in them, used by HTTP/3 transparent to the application.
 ///
 /// Deref is used to expose non-overloaded methods on [`iroh::endpoint::Connection`].
 /// These should be safe to use with WebTransport, but file a PR if you find one that isn't.
@@ -52,7 +52,7 @@ impl Session {
     ) -> Result<Session, ClientError> {
         let request = request.into();
 
-        // Perform the H3 handshake by sending/reciving SETTINGS frames.
+        // Perform the H3 handshake by sending/receiving SETTINGS frames.
         let settings = Settings::connect(&conn).await?;
 
         // Send the HTTP/3 CONNECT request.
@@ -65,6 +65,7 @@ impl Session {
         Ok(session)
     }
 
+    /// Creates a session from pre-established HTTP/3 handshake components.
     pub fn new_h3(conn: Connection, settings: Settings, mut connect: Connected) -> Self {
         let h3 = H3SessionState::connect(conn.clone(), settings, &connect);
         let this = Session { conn, h3: Some(h3) };
@@ -80,6 +81,7 @@ impl Session {
         this
     }
 
+    /// Returns the underlying QUIC connection.
     pub fn conn(&self) -> &Connection {
         &self.conn
     }
@@ -181,7 +183,7 @@ impl Session {
     pub fn send_datagram(&self, data: Bytes) -> Result<(), SessionError> {
         let datagram = if let Some(h3) = self.h3.as_ref() {
             // Unfortunately, we need to allocate/copy each datagram because of the Quinn API.
-            // Pls go +1 if you care: https://github.com/iroh::endpoint-rs/iroh::endpoint/issues/1724
+            // https://github.com/quinn-rs/quinn/issues/1724
             let mut buf = BytesMut::with_capacity(h3.header_datagram.len() + data.len());
             // Prepend the datagram with the header indicating the session ID.
             buf.extend_from_slice(&h3.header_datagram);
@@ -565,5 +567,12 @@ impl web_transport_trait::Session for Session {
 
     fn max_datagram_size(&self) -> usize {
         Self::max_datagram_size(self)
+    }
+
+    fn protocol(&self) -> Option<&str> {
+        match self.h3.as_ref() {
+            None => std::str::from_utf8(self.conn.alpn()).ok(),
+            Some(h3) => h3.response.protocol.as_deref(),
+        }
     }
 }

@@ -37,7 +37,7 @@ pub enum ClientError {
     Bind(#[error(source)] Arc<endpoint::BindError>),
 }
 
-/// An errors returned by [`crate::Session`], split based on if they are underlying QUIC errors or WebTransport errors.
+/// An error returned by [`crate::Session`], split between underlying QUIC errors and WebTransport errors.
 #[stack_error(derive, from_sources)]
 #[derive(Clone)]
 pub enum SessionError {

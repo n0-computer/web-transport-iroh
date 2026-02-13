@@ -4,6 +4,7 @@ use iroh::endpoint::Connection;
 use n0_error::stack_error;
 use web_transport_proto::{ConnectRequest, ConnectResponse, VarInt};
 
+/// An error during the HTTP/3 CONNECT handshake.
 #[derive(Clone)]
 #[stack_error(derive, from_sources)]
 pub enum ConnectError {
@@ -29,7 +30,7 @@ pub enum ConnectError {
     ProtocolMismatch(String),
 }
 
-/// An HTTP/3 CONNECT request/response for establishing a WebTransport session.
+/// An in-progress HTTP/3 CONNECT handshake, awaiting a response.
 pub struct Connecting {
     // The request that was sent by the client.
     request: ConnectRequest,
@@ -42,6 +43,7 @@ pub struct Connecting {
 }
 
 impl Connecting {
+    /// Accepts an incoming HTTP/3 CONNECT request from the client.
     pub async fn accept(conn: &iroh::endpoint::Connection) -> Result<Self, ConnectError> {
         // Accept the stream that will be used to send the HTTP CONNECT request.
         // If they try to send any other type of HTTP request, we will error out.
@@ -58,7 +60,7 @@ impl Connecting {
         })
     }
 
-    // Called by the server to send a response to the client and establish the session.
+    /// Sends a response to the client and establishes the session.
     pub async fn respond(
         mut self,
         response: impl Into<ConnectResponse>,
@@ -83,6 +85,7 @@ impl Connecting {
         })
     }
 
+    /// Rejects the CONNECT request with the given status code.
     pub async fn reject(self, status: http::StatusCode) -> Result<(), ConnectError> {
         let mut connect = self.respond(status).await?;
         connect.send.finish().ok();
@@ -98,11 +101,12 @@ impl Deref for Connecting {
     }
 }
 
+/// An established HTTP/3 CONNECT session with both request and response.
 pub struct Connected {
-    // The request that was sent by the client.
+    /// The request sent by the client.
     pub request: ConnectRequest,
 
-    // The response sent by the server.
+    /// The response sent by the server.
     pub response: ConnectResponse,
 
     // A reference to the send/recv stream, so we don't close it until dropped.
@@ -150,7 +154,7 @@ impl Connected {
         })
     }
 
-    // The session ID is the stream ID of the CONNECT request.
+    /// Returns the session ID, which is the stream ID of the CONNECT request.
     pub fn session_id(&self) -> VarInt {
         // We gotta convert from the Quinn VarInt to the (forked) WebTransport VarInt.
         // We don't use the iroh::endpoint::VarInt because that would mean a iroh::endpoint dependency in web-transport-proto

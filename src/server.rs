@@ -21,6 +21,7 @@ impl QuicRequest {
         Self { conn }
     }
 
+    /// Returns the underlying QUIC connection.
     pub fn conn(&self) -> &iroh::endpoint::Connection {
         &self.conn
     }
@@ -53,17 +54,19 @@ impl H3Request {
         })
     }
 
+    /// Returns the underlying QUIC connection.
     pub fn conn(&self) -> &iroh::endpoint::Connection {
         &self.conn
     }
 
+    /// Accept the session with a default 200 OK response.
     pub async fn ok(self) -> Result<Session, ServerError> {
         self.respond(ConnectResponse::OK).await
     }
 
     /// Reply to the session with the given response, usually 200 OK.
     ///
-    /// [ConnectResponse::with_protocol] can be used to select a subprotocol.
+    /// [`ConnectResponse::with_protocol`] can be used to select a subprotocol.
     pub async fn respond(
         self,
         response: impl Into<ConnectResponse>,
@@ -79,6 +82,7 @@ impl H3Request {
         Ok(())
     }
 
+    /// Returns the [`ConnectRequest`] sent by the client.
     pub fn request(&self) -> &ConnectRequest {
         &self.connect
     }

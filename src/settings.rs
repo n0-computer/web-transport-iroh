@@ -1,6 +1,7 @@
 use n0_error::stack_error;
 use tokio::try_join;
 
+/// An error during the HTTP/3 SETTINGS frame exchange.
 #[stack_error(derive, from_sources)]
 #[derive(Clone)]
 pub enum SettingsError {
@@ -23,6 +24,7 @@ pub enum SettingsError {
     WriteError(#[error(source, from, std_err)] iroh::endpoint::WriteError),
 }
 
+/// Maintains the HTTP/3 control stream by holding references to the send/recv streams.
 pub struct Settings {
     // A reference to the send/recv stream, so we don't close it until dropped.
     #[allow(dead_code)]
@@ -33,7 +35,7 @@ pub struct Settings {
 }
 
 impl Settings {
-    // Establish the H3 connection.
+    /// Establishes an HTTP/3 connection by exchanging SETTINGS frames.
     pub async fn connect(conn: &iroh::endpoint::Connection) -> Result<Self, SettingsError> {
         let recv = Self::accept(conn);
         let send = Self::open(conn);

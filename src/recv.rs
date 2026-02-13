@@ -8,7 +8,7 @@ use bytes::Bytes;
 
 use crate::{ReadError, ReadExactError, ReadToEndError, SessionError};
 
-/// A stream that can be used to recieve bytes. See [`iroh::endpoint::RecvStream`].
+/// A stream that can be used to receive bytes. See [`iroh::endpoint::RecvStream`].
 #[derive(Debug)]
 pub struct RecvStream {
     inner: iroh::endpoint::RecvStream,

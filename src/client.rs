@@ -8,13 +8,14 @@ use url::Url;
 
 use crate::{ALPN_H3, ClientError, Session};
 
-/// A client for connecting to a WebTransport server.
+/// A client for connecting to an iroh WebTransport endpoint.
 pub struct Client {
     endpoint: iroh::Endpoint,
     config: QuicTransportConfig,
 }
 
 impl Client {
+    /// Creates a client from an endpoint with the default transport config.
     pub fn new(endpoint: iroh::Endpoint) -> Self {
         Self::with_transport_config(endpoint, Default::default())
     }
@@ -24,7 +25,7 @@ impl Client {
         Self { endpoint, config }
     }
 
-    /// Connect to a server over QUIC without HTTP/3.
+    /// Connect to an iroh endpoint without HTTP/3.
     pub async fn connect_quic(
         &self,
         addr: impl Into<EndpointAddr>,
@@ -65,6 +66,7 @@ impl Client {
         Ok(conn)
     }
 
+    /// Close the client endpoint.
     pub async fn close(&self) {
         self.endpoint.close().await;
     }

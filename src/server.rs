@@ -10,6 +10,7 @@ pub struct QuicRequest {
 
 /// An H3 WebTransport handshake, SETTINGS exchanged and CONNECT accepted,
 /// awaiting server decision (respond OK / reject).
+#[derive(Debug)]
 pub struct H3Request {
     conn: Connection,
     settings: Settings,

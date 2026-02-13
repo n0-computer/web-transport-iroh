@@ -286,7 +286,7 @@ struct H3SessionState {
     header_datagram: Vec<u8>,
 
     // Keep a reference to the settings and connect stream to avoid closing them until dropped.
-    #[allow(dead_code)]
+    #[allow(unused)]
     settings: Arc<Settings>,
     // The accept logic is stateful, so use an Arc<Mutex> to share it.
     accept: Arc<Mutex<H3SessionAccept>>,
@@ -296,6 +296,14 @@ struct H3SessionState {
 
     // The response sent by the server.
     response: ConnectResponse,
+}
+
+impl fmt::Debug for H3SessionState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("H3SessionState")
+            .field("session_id", &self.session_id)
+            .finish_non_exhaustive()
+    }
 }
 
 impl H3SessionState {
@@ -340,7 +348,7 @@ type PendingBi = dyn Future<Output = Result<Option<(endpoint::SendStream, endpoi
     + Send;
 
 // Logic just for accepting streams, which is annoying because of the stream header.
-pub struct H3SessionAccept {
+struct H3SessionAccept {
     session_id: VarInt,
 
     // We also need to keep a reference to the qpack streams if the endpoint (incorrectly) creates them.

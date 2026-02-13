@@ -9,6 +9,7 @@ use url::Url;
 use crate::{ALPN_H3, ClientError, Session};
 
 /// A client for connecting to an iroh WebTransport endpoint.
+#[derive(Debug)]
 pub struct Client {
     endpoint: Endpoint,
     config: QuicTransportConfig,

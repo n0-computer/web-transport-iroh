@@ -31,6 +31,7 @@ pub enum ConnectError {
 }
 
 /// An in-progress HTTP/3 CONNECT handshake, awaiting a response.
+#[derive(Debug)]
 pub struct Connecting {
     // The request that was sent by the client.
     request: ConnectRequest,
@@ -102,6 +103,7 @@ impl Deref for Connecting {
 }
 
 /// An established HTTP/3 CONNECT session with both request and response.
+#[derive(Debug)]
 pub struct Connected {
     /// The request sent by the client.
     pub request: ConnectRequest,

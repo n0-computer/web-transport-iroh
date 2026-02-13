@@ -12,6 +12,7 @@ categories = ["network-programming", "web-programming"]
 
 [dependencies]
 bytes = "1"
+derive_more = { version = "2.1.1", features = ["debug"] }
 http = "1"
 iroh = "0.96.1"
 n0-error = "0.1.2"

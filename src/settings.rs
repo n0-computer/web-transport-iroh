@@ -1,3 +1,4 @@
+use iroh::endpoint;
 use n0_error::stack_error;
 use tokio::try_join;
 
@@ -15,28 +16,29 @@ pub enum SettingsError {
     WebTransportUnsupported,
 
     #[error("connection error")]
-    ConnectionError(#[error(source, from, std_err)] iroh::endpoint::ConnectionError),
+    ConnectionError(#[error(source, from, std_err)] endpoint::ConnectionError),
 
     #[error("read error")]
-    ReadError(#[error(source, from, std_err)] iroh::endpoint::ReadError),
+    ReadError(#[error(source, from, std_err)] endpoint::ReadError),
 
     #[error("write error")]
-    WriteError(#[error(source, from, std_err)] iroh::endpoint::WriteError),
+    WriteError(#[error(source, from, std_err)] endpoint::WriteError),
 }
 
 /// Maintains the HTTP/3 control stream by holding references to the send/recv streams.
+#[derive(Debug)]
 pub struct Settings {
     // A reference to the send/recv stream, so we don't close it until dropped.
     #[allow(dead_code)]
-    send: iroh::endpoint::SendStream,
+    send: endpoint::SendStream,
 
     #[allow(dead_code)]
-    recv: iroh::endpoint::RecvStream,
+    recv: endpoint::RecvStream,
 }
 
 impl Settings {
     /// Establishes an HTTP/3 connection by exchanging SETTINGS frames.
-    pub async fn connect(conn: &iroh::endpoint::Connection) -> Result<Self, SettingsError> {
+    pub async fn connect(conn: &endpoint::Connection) -> Result<Self, SettingsError> {
         let recv = Self::accept(conn);
         let send = Self::open(conn);
 
@@ -45,9 +47,7 @@ impl Settings {
         Ok(Self { send, recv })
     }
 
-    async fn accept(
-        conn: &iroh::endpoint::Connection,
-    ) -> Result<iroh::endpoint::RecvStream, SettingsError> {
+    async fn accept(conn: &endpoint::Connection) -> Result<endpoint::RecvStream, SettingsError> {
         let mut recv = conn.accept_uni().await?;
         let settings = web_transport_proto::Settings::read(&mut recv).await?;
 
@@ -60,9 +60,7 @@ impl Settings {
         Ok(recv)
     }
 
-    async fn open(
-        conn: &iroh::endpoint::Connection,
-    ) -> Result<iroh::endpoint::SendStream, SettingsError> {
+    async fn open(conn: &endpoint::Connection) -> Result<endpoint::SendStream, SettingsError> {
         let mut settings = web_transport_proto::Settings::default();
         settings.enable_webtransport(1);
 

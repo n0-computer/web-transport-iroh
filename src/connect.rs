@@ -65,10 +65,10 @@ impl Connecting {
         let response = response.into();
 
         // Validate that our protocol was in the client's request.
-        if let Some(protocol) = &response.protocol {
-            if !self.request.protocols.contains(protocol) {
-                return Err(ConnectError::ProtocolMismatch(protocol.clone()));
-            }
+        if let Some(protocol) = &response.protocol
+            && !self.request.protocols.contains(protocol)
+        {
+            return Err(ConnectError::ProtocolMismatch(protocol.clone()));
         }
 
         tracing::debug!(?response, "sending CONNECT response");
@@ -135,10 +135,10 @@ impl Connected {
         }
 
         // Validate that the server's protocol was in our request.
-        if let Some(protocol) = &response.protocol {
-            if !request.protocols.contains(protocol) {
-                return Err(ConnectError::ProtocolMismatch(protocol.clone()));
-            }
+        if let Some(protocol) = &response.protocol
+            && !request.protocols.contains(protocol)
+        {
+            return Err(ConnectError::ProtocolMismatch(protocol.clone()));
         }
 
         Ok(Self {

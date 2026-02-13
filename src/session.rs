@@ -165,8 +165,8 @@ impl Session {
             }
 
             // Return the datagram without the session ID.
-            let datagram = datagram.split_off(cursor.position() as usize);
-            datagram
+
+            datagram.split_off(cursor.position() as usize)
         } else {
             datagram
         };

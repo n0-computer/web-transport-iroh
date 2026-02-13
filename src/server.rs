@@ -1,28 +1,29 @@
+use iroh::endpoint::Connection;
 use web_transport_proto::{ConnectRequest, ConnectResponse};
 
 use crate::{Connecting, ServerError, Session, Settings};
 
 /// A QUIC-only WebTransport handshake, awaiting server decision.
 pub struct QuicRequest {
-    conn: iroh::endpoint::Connection,
+    conn: Connection,
 }
 
 /// An H3 WebTransport handshake, SETTINGS exchanged and CONNECT accepted,
 /// awaiting server decision (respond OK / reject).
 pub struct H3Request {
-    conn: iroh::endpoint::Connection,
+    conn: Connection,
     settings: Settings,
     connect: Connecting,
 }
 
 impl QuicRequest {
     /// Accept a new QUIC-only WebTransport session from a client.
-    pub fn accept(conn: iroh::endpoint::Connection) -> Self {
+    pub fn accept(conn: Connection) -> Self {
         Self { conn }
     }
 
     /// Returns the underlying QUIC connection.
-    pub fn conn(&self) -> &iroh::endpoint::Connection {
+    pub fn conn(&self) -> &Connection {
         &self.conn
     }
 
@@ -40,7 +41,7 @@ impl QuicRequest {
 
 impl H3Request {
     /// Accept a new H3 WebTransport session from a client.
-    pub async fn accept(conn: iroh::endpoint::Connection) -> Result<Self, ServerError> {
+    pub async fn accept(conn: Connection) -> Result<Self, ServerError> {
         // Perform the H3 handshake by sending/receiving SETTINGS frames.
         let settings = Settings::connect(&conn).await?;
 
@@ -55,7 +56,7 @@ impl H3Request {
     }
 
     /// Returns the underlying QUIC connection.
-    pub fn conn(&self) -> &iroh::endpoint::Connection {
+    pub fn conn(&self) -> &Connection {
         &self.conn
     }
 

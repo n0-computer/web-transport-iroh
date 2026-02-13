@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use iroh::endpoint::Connection;
+use iroh::endpoint::{self, Connection, RecvStream, SendStream};
 use n0_error::stack_error;
 use web_transport_proto::{ConnectRequest, ConnectResponse, VarInt};
 
@@ -15,13 +15,13 @@ pub enum ConnectError {
     ProtoError(#[error(source, from, std_err)] web_transport_proto::ConnectError),
 
     #[error("connection error")]
-    ConnectionError(#[error(source, from, std_err)] iroh::endpoint::ConnectionError),
+    ConnectionError(#[error(source, from, std_err)] endpoint::ConnectionError),
 
     #[error("read error")]
-    ReadError(#[error(source, from, std_err)] iroh::endpoint::ReadError),
+    ReadError(#[error(source, from, std_err)] endpoint::ReadError),
 
     #[error("write error")]
-    WriteError(#[error(source, from, std_err)] iroh::endpoint::WriteError),
+    WriteError(#[error(source, from, std_err)] endpoint::WriteError),
 
     #[error("http error status: {_0}")]
     ErrorStatus(http::StatusCode),
@@ -36,15 +36,15 @@ pub struct Connecting {
     request: ConnectRequest,
 
     // A reference to the send/recv stream, so we don't close it until dropped.
-    send: iroh::endpoint::SendStream,
+    send: SendStream,
 
     #[allow(dead_code)]
-    recv: iroh::endpoint::RecvStream,
+    recv: RecvStream,
 }
 
 impl Connecting {
     /// Accepts an incoming HTTP/3 CONNECT request from the client.
-    pub async fn accept(conn: &iroh::endpoint::Connection) -> Result<Self, ConnectError> {
+    pub async fn accept(conn: &Connection) -> Result<Self, ConnectError> {
         // Accept the stream that will be used to send the HTTP CONNECT request.
         // If they try to send any other type of HTTP request, we will error out.
         let (send, mut recv) = conn.accept_bi().await?;
@@ -110,8 +110,8 @@ pub struct Connected {
     pub response: ConnectResponse,
 
     // A reference to the send/recv stream, so we don't close it until dropped.
-    pub(crate) send: iroh::endpoint::SendStream,
-    pub(crate) recv: iroh::endpoint::RecvStream,
+    pub(crate) send: SendStream,
+    pub(crate) recv: RecvStream,
 }
 
 impl Connected {
@@ -158,7 +158,7 @@ impl Connected {
     pub fn session_id(&self) -> VarInt {
         // We gotta convert from the Quinn VarInt to the (forked) WebTransport VarInt.
         // We don't use the iroh::endpoint::VarInt because that would mean a iroh::endpoint dependency in web-transport-proto
-        let stream_id = iroh::endpoint::VarInt::from(self.send.id());
+        let stream_id = endpoint::VarInt::from(self.send.id());
         VarInt::try_from(stream_id.into_inner()).unwrap()
     }
 

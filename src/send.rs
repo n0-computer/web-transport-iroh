@@ -5,6 +5,7 @@ use std::{
 };
 
 use bytes::{Buf, Bytes};
+use iroh::endpoint;
 
 use crate::{ClosedStream, SessionError, WriteError};
 
@@ -14,11 +15,11 @@ use crate::{ClosedStream, SessionError, WriteError};
 /// WebTransport uses u32 error codes and they're mapped in a reserved HTTP/3 error space.
 #[derive(Debug)]
 pub struct SendStream {
-    stream: iroh::endpoint::SendStream,
+    stream: endpoint::SendStream,
 }
 
 impl SendStream {
-    pub(crate) fn new(stream: iroh::endpoint::SendStream) -> Self {
+    pub(crate) fn new(stream: endpoint::SendStream) -> Self {
         Self { stream }
     }
 
@@ -26,7 +27,7 @@ impl SendStream {
     /// This is a u32 with WebTransport because we share the error space with HTTP/3.
     pub fn reset(&mut self, code: u32) -> Result<(), ClosedStream> {
         let code = web_transport_proto::error_to_http3(code);
-        let code = iroh::endpoint::VarInt::try_from(code).unwrap();
+        let code = endpoint::VarInt::try_from(code).unwrap();
         self.stream.reset(code).map_err(Into::into)
     }
 
@@ -38,8 +39,8 @@ impl SendStream {
         match self.stream.stopped().await {
             Ok(Some(code)) => Ok(web_transport_proto::error_from_http3(code.into_inner())),
             Ok(None) => Ok(None),
-            Err(iroh::endpoint::StoppedError::ConnectionLost(e)) => Err(e.into()),
-            Err(iroh::endpoint::StoppedError::ZeroRttRejected) => {
+            Err(endpoint::StoppedError::ConnectionLost(e)) => Err(e.into()),
+            Err(endpoint::StoppedError::ZeroRttRejected) => {
                 unreachable!("0-RTT not supported")
             }
         }
@@ -61,7 +62,7 @@ impl SendStream {
     pub async fn write_chunks(
         &mut self,
         bufs: &mut [Bytes],
-    ) -> Result<iroh::endpoint::Written, WriteError> {
+    ) -> Result<endpoint::Written, WriteError> {
         self.stream.write_chunks(bufs).await.map_err(Into::into)
     }
 

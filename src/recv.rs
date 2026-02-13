@@ -5,25 +5,26 @@ use std::{
 };
 
 use bytes::Bytes;
+use iroh::endpoint;
 
 use crate::{ReadError, ReadExactError, ReadToEndError, SessionError};
 
 /// A stream that can be used to receive bytes. See [`iroh::endpoint::RecvStream`].
 #[derive(Debug)]
 pub struct RecvStream {
-    inner: iroh::endpoint::RecvStream,
+    inner: endpoint::RecvStream,
 }
 
 impl RecvStream {
-    pub(crate) fn new(stream: iroh::endpoint::RecvStream) -> Self {
+    pub(crate) fn new(stream: endpoint::RecvStream) -> Self {
         Self { inner: stream }
     }
 
     /// Tell the other end to stop sending data with the given error code. See [`iroh::endpoint::RecvStream::stop`].
     /// This is a u32 with WebTransport since it shares the error space with HTTP/3.
-    pub fn stop(&mut self, code: u32) -> Result<(), iroh::endpoint::ClosedStream> {
+    pub fn stop(&mut self, code: u32) -> Result<(), endpoint::ClosedStream> {
         let code = web_transport_proto::error_to_http3(code);
-        let code = iroh::endpoint::VarInt::try_from(code).unwrap();
+        let code = endpoint::VarInt::try_from(code).unwrap();
         self.inner.stop(code)
     }
 
@@ -43,7 +44,7 @@ impl RecvStream {
     pub async fn read_chunk(
         &mut self,
         max_length: usize,
-    ) -> Result<Option<iroh::endpoint::Chunk>, ReadError> {
+    ) -> Result<Option<endpoint::Chunk>, ReadError> {
         self.inner.read_chunk(max_length).await.map_err(Into::into)
     }
 
@@ -66,8 +67,8 @@ impl RecvStream {
             Ok(Some(code)) => Ok(Some(
                 web_transport_proto::error_from_http3(code.into_inner()).unwrap(),
             )),
-            Err(iroh::endpoint::ResetError::ConnectionLost(e)) => Err(e.into()),
-            Err(iroh::endpoint::ResetError::ZeroRttRejected) => unreachable!("0-RTT not supported"),
+            Err(endpoint::ResetError::ConnectionLost(e)) => Err(e.into()),
+            Err(endpoint::ResetError::ZeroRttRejected) => unreachable!("0-RTT not supported"),
         }
     }
 

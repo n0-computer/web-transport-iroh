@@ -9,7 +9,7 @@ use std::{
 };
 
 use bytes::{Bytes, BytesMut};
-use iroh::endpoint::Connection;
+use iroh::endpoint::{self, Connection};
 use n0_future::{
     FuturesUnordered,
     stream::{Stream, StreamExt},
@@ -237,7 +237,7 @@ impl Session {
 }
 
 async fn write_full_with_max_prio(
-    send: &mut iroh::endpoint::SendStream,
+    send: &mut endpoint::SendStream,
     buf: &[u8],
 ) -> Result<(), SessionError> {
     // Set the stream priority to max and then write the stream header.
@@ -246,7 +246,7 @@ async fn write_full_with_max_prio(
     send.set_priority(i32::MAX).ok();
     let res = match send.write_all(buf).await {
         Ok(_) => Ok(()),
-        Err(iroh::endpoint::WriteError::ConnectionLost(err)) => Err(err.into()),
+        Err(endpoint::WriteError::ConnectionLost(err)) => Err(err.into()),
         Err(err) => Err(WebTransportError::WriteError(err).into()),
     };
     // Reset the stream priority back to the default of 0.
@@ -331,22 +331,13 @@ impl H3SessionState {
 }
 
 // Type aliases just so clippy doesn't complain about the complexity.
-type AcceptUni =
-    dyn Stream<Item = Result<iroh::endpoint::RecvStream, iroh::endpoint::ConnectionError>> + Send;
-type AcceptBi = dyn Stream<
-        Item = Result<
-            (iroh::endpoint::SendStream, iroh::endpoint::RecvStream),
-            iroh::endpoint::ConnectionError,
-        >,
-    > + Send;
+type AcceptUni = dyn Stream<Item = Result<endpoint::RecvStream, endpoint::ConnectionError>> + Send;
+type AcceptBi = dyn Stream<Item = Result<(endpoint::SendStream, endpoint::RecvStream), endpoint::ConnectionError>>
+    + Send;
 type PendingUni =
-    dyn Future<Output = Result<(StreamUni, iroh::endpoint::RecvStream), SessionError>> + Send;
-type PendingBi = dyn Future<
-        Output = Result<
-            Option<(iroh::endpoint::SendStream, iroh::endpoint::RecvStream)>,
-            SessionError,
-        >,
-    > + Send;
+    dyn Future<Output = Result<(StreamUni, endpoint::RecvStream), SessionError>> + Send;
+type PendingBi = dyn Future<Output = Result<Option<(endpoint::SendStream, endpoint::RecvStream)>, SessionError>>
+    + Send;
 
 // Logic just for accepting streams, which is annoying because of the stream header.
 pub struct H3SessionAccept {
@@ -354,8 +345,8 @@ pub struct H3SessionAccept {
 
     // We also need to keep a reference to the qpack streams if the endpoint (incorrectly) creates them.
     // Again, this is just so they don't get closed until we drop the session.
-    qpack_encoder: Option<iroh::endpoint::RecvStream>,
-    qpack_decoder: Option<iroh::endpoint::RecvStream>,
+    qpack_encoder: Option<endpoint::RecvStream>,
+    qpack_decoder: Option<endpoint::RecvStream>,
 
     accept_uni: Pin<Box<AcceptUni>>,
     accept_bi: Pin<Box<AcceptBi>>,
@@ -441,9 +432,9 @@ impl H3SessionAccept {
 
     // Reads the stream header, returning the stream type.
     async fn decode_uni(
-        mut recv: iroh::endpoint::RecvStream,
+        mut recv: endpoint::RecvStream,
         expected_session: VarInt,
-    ) -> Result<(StreamUni, iroh::endpoint::RecvStream), SessionError> {
+    ) -> Result<(StreamUni, endpoint::RecvStream), SessionError> {
         // Read the VarInt at the start of the stream.
         let typ = VarInt::read(&mut recv)
             .await
@@ -503,11 +494,10 @@ impl H3SessionAccept {
 
     // Reads the stream header, returning Some if it's a WebTransport stream.
     async fn decode_bi(
-        send: iroh::endpoint::SendStream,
-        mut recv: iroh::endpoint::RecvStream,
+        send: endpoint::SendStream,
+        mut recv: endpoint::RecvStream,
         expected_session: VarInt,
-    ) -> Result<Option<(iroh::endpoint::SendStream, iroh::endpoint::RecvStream)>, SessionError>
-    {
+    ) -> Result<Option<(endpoint::SendStream, endpoint::RecvStream)>, SessionError> {
         let typ = VarInt::read(&mut recv)
             .await
             .map_err(|_| WebTransportError::UnknownSession)?;

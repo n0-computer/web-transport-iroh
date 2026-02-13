@@ -16,19 +16,19 @@ pub enum SettingsError {
     ConnectionError(#[from] iroh::endpoint::ConnectionError),
 
     #[error("read error")]
-    ReadError(#[from] quinn::ReadError),
+    ReadError(#[from] iroh::endpoint::ReadError),
 
     #[error("write error")]
-    WriteError(#[from] quinn::WriteError),
+    WriteError(#[from] iroh::endpoint::WriteError),
 }
 
 pub struct Settings {
     // A reference to the send/recv stream, so we don't close it until dropped.
     #[allow(dead_code)]
-    send: quinn::SendStream,
+    send: iroh::endpoint::SendStream,
 
     #[allow(dead_code)]
-    recv: quinn::RecvStream,
+    recv: iroh::endpoint::RecvStream,
 }
 
 impl Settings {
@@ -42,7 +42,9 @@ impl Settings {
         Ok(Self { send, recv })
     }
 
-    async fn accept(conn: &iroh::endpoint::Connection) -> Result<quinn::RecvStream, SettingsError> {
+    async fn accept(
+        conn: &iroh::endpoint::Connection,
+    ) -> Result<iroh::endpoint::RecvStream, SettingsError> {
         let mut recv = conn.accept_uni().await?;
         let settings = web_transport_proto::Settings::read(&mut recv).await?;
 
@@ -55,7 +57,9 @@ impl Settings {
         Ok(recv)
     }
 
-    async fn open(conn: &iroh::endpoint::Connection) -> Result<quinn::SendStream, SettingsError> {
+    async fn open(
+        conn: &iroh::endpoint::Connection,
+    ) -> Result<iroh::endpoint::SendStream, SettingsError> {
         let mut settings = web_transport_proto::Settings::default();
         settings.enable_webtransport(1);
 

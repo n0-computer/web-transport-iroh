@@ -8,56 +8,56 @@ use bytes::Bytes;
 
 use crate::{ReadError, ReadExactError, ReadToEndError, SessionError};
 
-/// A stream that can be used to recieve bytes. See [`quinn::RecvStream`].
+/// A stream that can be used to recieve bytes. See [`iroh::endpoint::RecvStream`].
 #[derive(Debug)]
 pub struct RecvStream {
-    inner: quinn::RecvStream,
+    inner: iroh::endpoint::RecvStream,
 }
 
 impl RecvStream {
-    pub(crate) fn new(stream: quinn::RecvStream) -> Self {
+    pub(crate) fn new(stream: iroh::endpoint::RecvStream) -> Self {
         Self { inner: stream }
     }
 
-    /// Tell the other end to stop sending data with the given error code. See [`quinn::RecvStream::stop`].
+    /// Tell the other end to stop sending data with the given error code. See [`iroh::endpoint::RecvStream::stop`].
     /// This is a u32 with WebTransport since it shares the error space with HTTP/3.
-    pub fn stop(&mut self, code: u32) -> Result<(), quinn::ClosedStream> {
+    pub fn stop(&mut self, code: u32) -> Result<(), iroh::endpoint::ClosedStream> {
         let code = web_transport_proto::error_to_http3(code);
-        let code = quinn::VarInt::try_from(code).unwrap();
+        let code = iroh::endpoint::VarInt::try_from(code).unwrap();
         self.inner.stop(code)
     }
 
     // Unfortunately, we have to wrap ReadError for a bunch of functions.
 
-    /// Read some data into the buffer and return the amount read. See [`quinn::RecvStream::read`].
+    /// Read some data into the buffer and return the amount read. See [`iroh::endpoint::RecvStream::read`].
     pub async fn read(&mut self, buf: &mut [u8]) -> Result<Option<usize>, ReadError> {
         self.inner.read(buf).await.map_err(Into::into)
     }
 
-    /// Fill the entire buffer with data. See [`quinn::RecvStream::read_exact`].
+    /// Fill the entire buffer with data. See [`iroh::endpoint::RecvStream::read_exact`].
     pub async fn read_exact(&mut self, buf: &mut [u8]) -> Result<(), ReadExactError> {
         self.inner.read_exact(buf).await.map_err(Into::into)
     }
 
-    /// Read a chunk of data from the stream. See [`quinn::RecvStream::read_chunk`].
+    /// Read a chunk of data from the stream. See [`iroh::endpoint::RecvStream::read_chunk`].
     pub async fn read_chunk(
         &mut self,
         max_length: usize,
-    ) -> Result<Option<quinn::Chunk>, ReadError> {
+    ) -> Result<Option<iroh::endpoint::Chunk>, ReadError> {
         self.inner.read_chunk(max_length).await.map_err(Into::into)
     }
 
-    /// Read chunks of data from the stream. See [`quinn::RecvStream::read_chunks`].
+    /// Read chunks of data from the stream. See [`iroh::endpoint::RecvStream::read_chunks`].
     pub async fn read_chunks(&mut self, bufs: &mut [Bytes]) -> Result<Option<usize>, ReadError> {
         self.inner.read_chunks(bufs).await.map_err(Into::into)
     }
 
-    /// Read until the end of the stream or the limit is hit. See [`quinn::RecvStream::read_to_end`].
+    /// Read until the end of the stream or the limit is hit. See [`iroh::endpoint::RecvStream::read_to_end`].
     pub async fn read_to_end(&mut self, size_limit: usize) -> Result<Vec<u8>, ReadToEndError> {
         self.inner.read_to_end(size_limit).await.map_err(Into::into)
     }
 
-    /// Block until the stream has been reset and return the error code. See [`quinn::RecvStream::received_reset`].
+    /// Block until the stream has been reset and return the error code. See [`iroh::endpoint::RecvStream::received_reset`].
     ///
     /// Unlike Quinn, this returns a SessionError, not a ResetError, because 0-RTT is not supported.
     pub async fn received_reset(&mut self) -> Result<Option<u32>, SessionError> {
@@ -66,8 +66,8 @@ impl RecvStream {
             Ok(Some(code)) => Ok(Some(
                 web_transport_proto::error_from_http3(code.into_inner()).unwrap(),
             )),
-            Err(quinn::ResetError::ConnectionLost(e)) => Err(e.into()),
-            Err(quinn::ResetError::ZeroRttRejected) => unreachable!("0-RTT not supported"),
+            Err(iroh::endpoint::ResetError::ConnectionLost(e)) => Err(e.into()),
+            Err(iroh::endpoint::ResetError::ZeroRttRejected) => unreachable!("0-RTT not supported"),
         }
     }
 

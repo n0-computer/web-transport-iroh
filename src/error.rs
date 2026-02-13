@@ -19,10 +19,10 @@ pub enum ClientError {
     Connection(#[error(source, std_err)] iroh::endpoint::ConnectionError),
 
     #[error("failed to write")]
-    WriteError(#[error(source, std_err)] quinn::WriteError),
+    WriteError(#[error(source, std_err)] iroh::endpoint::WriteError),
 
     #[error("failed to read")]
-    ReadError(#[error(source, std_err)] quinn::ReadError),
+    ReadError(#[error(source, std_err)] iroh::endpoint::ReadError),
 
     #[error("failed to exchange h3 settings")]
     SettingsError(#[error(from, source, std_err)] SettingsError),
@@ -47,7 +47,7 @@ pub enum SessionError {
     WebTransportError(#[from] WebTransportError),
 
     #[error("send datagram error: {0}")]
-    SendDatagramError(#[from] quinn::SendDatagramError),
+    SendDatagramError(#[from] iroh::endpoint::SendDatagramError),
 }
 
 /// An error that can occur when reading/writing the WebTransport stream header.
@@ -60,20 +60,20 @@ pub enum WebTransportError {
     UnknownSession,
 
     #[error("read error: {0}")]
-    ReadError(#[from] quinn::ReadExactError),
+    ReadError(#[from] iroh::endpoint::ReadExactError),
 
     #[error("write error: {0}")]
-    WriteError(#[from] quinn::WriteError),
+    WriteError(#[from] iroh::endpoint::WriteError),
 }
 
-/// An error when writing to [`crate::SendStream`]. Similar to [`quinn::WriteError`].
+/// An error when writing to [`crate::SendStream`]. Similar to [`iroh::endpoint::WriteError`].
 #[derive(Clone, Error, Debug)]
 pub enum WriteError {
     #[error("STOP_SENDING: {0}")]
     Stopped(u32),
 
     #[error("invalid STOP_SENDING: {0}")]
-    InvalidStopped(quinn::VarInt),
+    InvalidStopped(iroh::endpoint::VarInt),
 
     #[error("session error: {0}")]
     SessionError(#[from] SessionError),
@@ -82,23 +82,23 @@ pub enum WriteError {
     ClosedStream,
 }
 
-impl From<quinn::WriteError> for WriteError {
-    fn from(e: quinn::WriteError) -> Self {
+impl From<iroh::endpoint::WriteError> for WriteError {
+    fn from(e: iroh::endpoint::WriteError) -> Self {
         match e {
-            quinn::WriteError::Stopped(code) => {
+            iroh::endpoint::WriteError::Stopped(code) => {
                 match web_transport_proto::error_from_http3(code.into_inner()) {
                     Some(code) => WriteError::Stopped(code),
                     None => WriteError::InvalidStopped(code),
                 }
             }
-            quinn::WriteError::ClosedStream => WriteError::ClosedStream,
-            quinn::WriteError::ConnectionLost(e) => WriteError::SessionError(e.into()),
-            quinn::WriteError::ZeroRttRejected => unreachable!("0-RTT not supported"),
+            iroh::endpoint::WriteError::ClosedStream => WriteError::ClosedStream,
+            iroh::endpoint::WriteError::ConnectionLost(e) => WriteError::SessionError(e.into()),
+            iroh::endpoint::WriteError::ZeroRttRejected => unreachable!("0-RTT not supported"),
         }
     }
 }
 
-/// An error when reading from [`crate::RecvStream`]. Similar to [`quinn::ReadError`].
+/// An error when reading from [`crate::RecvStream`]. Similar to [`iroh::endpoint::ReadError`].
 #[derive(Clone, Error, Debug)]
 pub enum ReadError {
     #[error("session error: {0}")]
@@ -108,29 +108,29 @@ pub enum ReadError {
     Reset(u32),
 
     #[error("invalid RESET_STREAM: {0}")]
-    InvalidReset(quinn::VarInt),
+    InvalidReset(iroh::endpoint::VarInt),
 
     #[error("stream already closed")]
     ClosedStream,
 }
 
-impl From<quinn::ReadError> for ReadError {
-    fn from(value: quinn::ReadError) -> Self {
+impl From<iroh::endpoint::ReadError> for ReadError {
+    fn from(value: iroh::endpoint::ReadError) -> Self {
         match value {
-            quinn::ReadError::Reset(code) => {
+            iroh::endpoint::ReadError::Reset(code) => {
                 match web_transport_proto::error_from_http3(code.into_inner()) {
                     Some(code) => ReadError::Reset(code),
                     None => ReadError::InvalidReset(code),
                 }
             }
-            quinn::ReadError::ConnectionLost(e) => Self::SessionError(e.into()),
-            quinn::ReadError::ClosedStream => Self::ClosedStream,
-            quinn::ReadError::ZeroRttRejected => unreachable!("0-RTT not supported"),
+            iroh::endpoint::ReadError::ConnectionLost(e) => Self::SessionError(e.into()),
+            iroh::endpoint::ReadError::ClosedStream => Self::ClosedStream,
+            iroh::endpoint::ReadError::ZeroRttRejected => unreachable!("0-RTT not supported"),
         }
     }
 }
 
-/// An error returned by [`crate::RecvStream::read_exact`]. Similar to [`quinn::ReadExactError`].
+/// An error returned by [`crate::RecvStream::read_exact`]. Similar to [`iroh::endpoint::ReadExactError`].
 #[derive(Clone, Error, Debug)]
 pub enum ReadExactError {
     #[error("finished early")]
@@ -140,16 +140,18 @@ pub enum ReadExactError {
     ReadError(#[from] ReadError),
 }
 
-impl From<quinn::ReadExactError> for ReadExactError {
-    fn from(e: quinn::ReadExactError) -> Self {
+impl From<iroh::endpoint::ReadExactError> for ReadExactError {
+    fn from(e: iroh::endpoint::ReadExactError) -> Self {
         match e {
-            quinn::ReadExactError::FinishedEarly(size) => ReadExactError::FinishedEarly(size),
-            quinn::ReadExactError::ReadError(e) => ReadExactError::ReadError(e.into()),
+            iroh::endpoint::ReadExactError::FinishedEarly(size) => {
+                ReadExactError::FinishedEarly(size)
+            }
+            iroh::endpoint::ReadExactError::ReadError(e) => ReadExactError::ReadError(e.into()),
         }
     }
 }
 
-/// An error returned by [`crate::RecvStream::read_to_end`]. Similar to [`quinn::ReadToEndError`].
+/// An error returned by [`crate::RecvStream::read_to_end`]. Similar to [`iroh::endpoint::ReadToEndError`].
 #[derive(Clone, Error, Debug)]
 pub enum ReadToEndError {
     #[error("too long")]
@@ -159,11 +161,11 @@ pub enum ReadToEndError {
     ReadError(#[from] ReadError),
 }
 
-impl From<quinn::ReadToEndError> for ReadToEndError {
-    fn from(e: quinn::ReadToEndError) -> Self {
+impl From<iroh::endpoint::ReadToEndError> for ReadToEndError {
+    fn from(e: iroh::endpoint::ReadToEndError) -> Self {
         match e {
-            quinn::ReadToEndError::TooLong => ReadToEndError::TooLong,
-            quinn::ReadToEndError::Read(e) => ReadToEndError::ReadError(e.into()),
+            iroh::endpoint::ReadToEndError::TooLong => ReadToEndError::TooLong,
+            iroh::endpoint::ReadToEndError::Read(e) => ReadToEndError::ReadError(e.into()),
         }
     }
 }
@@ -173,8 +175,8 @@ impl From<quinn::ReadToEndError> for ReadToEndError {
 #[error("stream closed")]
 pub struct ClosedStream;
 
-impl From<quinn::ClosedStream> for ClosedStream {
-    fn from(_: quinn::ClosedStream) -> Self {
+impl From<iroh::endpoint::ClosedStream> for ClosedStream {
+    fn from(_: iroh::endpoint::ClosedStream) -> Self {
         ClosedStream
     }
 }
@@ -193,10 +195,10 @@ pub enum ServerError {
     Connecting(#[error(source)] Arc<iroh::endpoint::ConnectingError>),
 
     #[error("failed to write")]
-    WriteError(#[error(source, std_err)] quinn::WriteError),
+    WriteError(#[error(source, std_err)] iroh::endpoint::WriteError),
 
     #[error("failed to read")]
-    ReadError(#[error(source, std_err)] quinn::ReadError),
+    ReadError(#[error(source, std_err)] iroh::endpoint::ReadError),
 
     #[error("io error")]
     IoError(#[error(source)] Arc<std::io::Error>),

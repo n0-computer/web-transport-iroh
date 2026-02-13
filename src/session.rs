@@ -181,7 +181,7 @@ impl Session {
     pub fn send_datagram(&self, data: Bytes) -> Result<(), SessionError> {
         let datagram = if let Some(h3) = self.h3.as_ref() {
             // Unfortunately, we need to allocate/copy each datagram because of the Quinn API.
-            // Pls go +1 if you care: https://github.com/quinn-rs/quinn/issues/1724
+            // Pls go +1 if you care: https://github.com/iroh::endpoint-rs/iroh::endpoint/issues/1724
             let mut buf = BytesMut::with_capacity(h3.header_datagram.len() + data.len());
             // Prepend the datagram with the header indicating the session ID.
             buf.extend_from_slice(&h3.header_datagram);
@@ -235,7 +235,7 @@ impl Session {
 }
 
 async fn write_full_with_max_prio(
-    send: &mut quinn::SendStream,
+    send: &mut iroh::endpoint::SendStream,
     buf: &[u8],
 ) -> Result<(), SessionError> {
     // Set the stream priority to max and then write the stream header.
@@ -244,7 +244,7 @@ async fn write_full_with_max_prio(
     send.set_priority(i32::MAX).ok();
     let res = match send.write_all(buf).await {
         Ok(_) => Ok(()),
-        Err(quinn::WriteError::ConnectionLost(err)) => Err(err.into()),
+        Err(iroh::endpoint::WriteError::ConnectionLost(err)) => Err(err.into()),
         Err(err) => Err(WebTransportError::WriteError(err).into()),
     };
     // Reset the stream priority back to the default of 0.
@@ -330,12 +330,21 @@ impl H3SessionState {
 
 // Type aliases just so clippy doesn't complain about the complexity.
 type AcceptUni =
-    dyn Stream<Item = Result<quinn::RecvStream, iroh::endpoint::ConnectionError>> + Send;
-type AcceptBi = dyn Stream<Item = Result<(quinn::SendStream, quinn::RecvStream), iroh::endpoint::ConnectionError>>
-    + Send;
-type PendingUni = dyn Future<Output = Result<(StreamUni, quinn::RecvStream), SessionError>> + Send;
-type PendingBi = dyn Future<Output = Result<Option<(quinn::SendStream, quinn::RecvStream)>, SessionError>>
-    + Send;
+    dyn Stream<Item = Result<iroh::endpoint::RecvStream, iroh::endpoint::ConnectionError>> + Send;
+type AcceptBi = dyn Stream<
+        Item = Result<
+            (iroh::endpoint::SendStream, iroh::endpoint::RecvStream),
+            iroh::endpoint::ConnectionError,
+        >,
+    > + Send;
+type PendingUni =
+    dyn Future<Output = Result<(StreamUni, iroh::endpoint::RecvStream), SessionError>> + Send;
+type PendingBi = dyn Future<
+        Output = Result<
+            Option<(iroh::endpoint::SendStream, iroh::endpoint::RecvStream)>,
+            SessionError,
+        >,
+    > + Send;
 
 // Logic just for accepting streams, which is annoying because of the stream header.
 pub struct H3SessionAccept {
@@ -343,8 +352,8 @@ pub struct H3SessionAccept {
 
     // We also need to keep a reference to the qpack streams if the endpoint (incorrectly) creates them.
     // Again, this is just so they don't get closed until we drop the session.
-    qpack_encoder: Option<quinn::RecvStream>,
-    qpack_decoder: Option<quinn::RecvStream>,
+    qpack_encoder: Option<iroh::endpoint::RecvStream>,
+    qpack_decoder: Option<iroh::endpoint::RecvStream>,
 
     accept_uni: Pin<Box<AcceptUni>>,
     accept_bi: Pin<Box<AcceptBi>>,
@@ -430,9 +439,9 @@ impl H3SessionAccept {
 
     // Reads the stream header, returning the stream type.
     async fn decode_uni(
-        mut recv: quinn::RecvStream,
+        mut recv: iroh::endpoint::RecvStream,
         expected_session: VarInt,
-    ) -> Result<(StreamUni, quinn::RecvStream), SessionError> {
+    ) -> Result<(StreamUni, iroh::endpoint::RecvStream), SessionError> {
         // Read the VarInt at the start of the stream.
         let typ = VarInt::read(&mut recv)
             .await
@@ -492,10 +501,11 @@ impl H3SessionAccept {
 
     // Reads the stream header, returning Some if it's a WebTransport stream.
     async fn decode_bi(
-        send: quinn::SendStream,
-        mut recv: quinn::RecvStream,
+        send: iroh::endpoint::SendStream,
+        mut recv: iroh::endpoint::RecvStream,
         expected_session: VarInt,
-    ) -> Result<Option<(quinn::SendStream, quinn::RecvStream)>, SessionError> {
+    ) -> Result<Option<(iroh::endpoint::SendStream, iroh::endpoint::RecvStream)>, SessionError>
+    {
         let typ = VarInt::read(&mut recv)
             .await
             .map_err(|_| WebTransportError::UnknownSession)?;

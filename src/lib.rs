@@ -3,7 +3,7 @@
 //!
 //! WebTransport is layered on top of HTTP/3 which is then layered on top of QUIC.
 //! This library hides that detail and tries to expose only the QUIC API, delegating as much as possible to the underlying implementation.
-//! See the [Quinn documentation](https://docs.rs/quinn/latest/quinn/) for more documentation.
+//! See the [Quinn documentation](https://docs.rs/iroh::endpoint/latest/iroh::endpoint/) for more documentation.
 //!
 //! QUIC provides two primary APIs:
 //!
@@ -49,8 +49,7 @@ pub const ALPN_H3: &str = "h3";
 
 /// Re-export the http crate because it's in the public API.
 pub use http;
+/// Re-export iroh.
 pub use iroh;
-/// Re-export the underlying QUIC implementation.
-pub use quinn;
 /// Re-export the generic WebTransport implementation.
 pub use web_transport_trait as generic;

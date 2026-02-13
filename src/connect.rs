@@ -16,10 +16,10 @@ pub enum ConnectError {
     ConnectionError(#[from] iroh::endpoint::ConnectionError),
 
     #[error("read error")]
-    ReadError(#[from] quinn::ReadError),
+    ReadError(#[from] iroh::endpoint::ReadError),
 
     #[error("write error")]
-    WriteError(#[from] quinn::WriteError),
+    WriteError(#[from] iroh::endpoint::WriteError),
 
     #[error("http error status: {0}")]
     ErrorStatus(http::StatusCode),
@@ -34,10 +34,10 @@ pub struct Connecting {
     request: ConnectRequest,
 
     // A reference to the send/recv stream, so we don't close it until dropped.
-    send: quinn::SendStream,
+    send: iroh::endpoint::SendStream,
 
     #[allow(dead_code)]
-    recv: quinn::RecvStream,
+    recv: iroh::endpoint::RecvStream,
 }
 
 impl Connecting {
@@ -105,8 +105,8 @@ pub struct Connected {
     pub response: ConnectResponse,
 
     // A reference to the send/recv stream, so we don't close it until dropped.
-    pub(crate) send: quinn::SendStream,
-    pub(crate) recv: quinn::RecvStream,
+    pub(crate) send: iroh::endpoint::SendStream,
+    pub(crate) recv: iroh::endpoint::RecvStream,
 }
 
 impl Connected {
@@ -152,8 +152,8 @@ impl Connected {
     // The session ID is the stream ID of the CONNECT request.
     pub fn session_id(&self) -> VarInt {
         // We gotta convert from the Quinn VarInt to the (forked) WebTransport VarInt.
-        // We don't use the quinn::VarInt because that would mean a quinn dependency in web-transport-proto
-        let stream_id = quinn::VarInt::from(self.send.id());
+        // We don't use the iroh::endpoint::VarInt because that would mean a iroh::endpoint dependency in web-transport-proto
+        let stream_id = iroh::endpoint::VarInt::from(self.send.id());
         VarInt::try_from(stream_id.into_inner()).unwrap()
     }
 

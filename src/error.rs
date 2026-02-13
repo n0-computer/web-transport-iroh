@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
+use iroh::endpoint;
 use n0_error::stack_error;
-use thiserror::Error;
 
 use crate::{ConnectError, SettingsError};
 
@@ -13,16 +13,16 @@ pub enum ClientError {
     UnexpectedEnd,
 
     #[error("failed to connect")]
-    Connect(#[error(source)] Arc<iroh::endpoint::ConnectError>),
+    Connect(#[error(source)] Arc<endpoint::ConnectError>),
 
     #[error("connection failed")]
-    Connection(#[error(source, std_err)] iroh::endpoint::ConnectionError),
+    Connection(#[error(source, std_err)] endpoint::ConnectionError),
 
     #[error("failed to write")]
-    WriteError(#[error(source, std_err)] iroh::endpoint::WriteError),
+    WriteError(#[error(source, std_err)] endpoint::WriteError),
 
     #[error("failed to read")]
-    ReadError(#[error(source, std_err)] iroh::endpoint::ReadError),
+    ReadError(#[error(source, std_err)] endpoint::ReadError),
 
     #[error("failed to exchange h3 settings")]
     SettingsError(#[error(from, source, std_err)] SettingsError),
@@ -34,149 +34,154 @@ pub enum ClientError {
     InvalidUrl,
 
     #[error("endpoint failed to bind")]
-    Bind(#[error(source)] Arc<iroh::endpoint::BindError>),
+    Bind(#[error(source)] Arc<endpoint::BindError>),
 }
 
 /// An errors returned by [`crate::Session`], split based on if they are underlying QUIC errors or WebTransport errors.
-#[derive(Clone, Error, Debug)]
+#[stack_error(derive, from_sources)]
+#[derive(Clone)]
 pub enum SessionError {
-    #[error("connection error: {0}")]
-    ConnectionError(#[from] iroh::endpoint::ConnectionError),
+    #[error("connection error")]
+    ConnectionError(#[error(source, from, std_err)] endpoint::ConnectionError),
 
-    #[error("webtransport error: {0}")]
-    WebTransportError(#[from] WebTransportError),
+    #[error("webtransport error")]
+    WebTransportError(#[error(source, from, std_err)] WebTransportError),
 
-    #[error("send datagram error: {0}")]
-    SendDatagramError(#[from] iroh::endpoint::SendDatagramError),
+    #[error("send datagram error")]
+    SendDatagramError(#[error(source, from, std_err)] endpoint::SendDatagramError),
 }
 
 /// An error that can occur when reading/writing the WebTransport stream header.
-#[derive(Clone, Error, Debug)]
+#[stack_error(derive, from_sources)]
+#[derive(Clone)]
 pub enum WebTransportError {
-    #[error("closed: code={0} reason={1}")]
-    Closed(u32, String),
+    #[error("closed: code={code} reason={reason}")]
+    Closed { code: u32, reason: String },
 
     #[error("unknown session")]
     UnknownSession,
 
-    #[error("read error: {0}")]
-    ReadError(#[from] iroh::endpoint::ReadExactError),
+    #[error("read error")]
+    ReadError(#[error(source, from, std_err)] endpoint::ReadExactError),
 
-    #[error("write error: {0}")]
-    WriteError(#[from] iroh::endpoint::WriteError),
+    #[error("write error")]
+    WriteError(#[error(source, from, std_err)] endpoint::WriteError),
 }
 
 /// An error when writing to [`crate::SendStream`]. Similar to [`iroh::endpoint::WriteError`].
-#[derive(Clone, Error, Debug)]
+#[stack_error(derive, from_sources)]
+#[derive(Clone)]
 pub enum WriteError {
-    #[error("STOP_SENDING: {0}")]
+    #[error("STOP_SENDING: {_0}")]
     Stopped(u32),
 
-    #[error("invalid STOP_SENDING: {0}")]
-    InvalidStopped(iroh::endpoint::VarInt),
+    #[error("invalid STOP_SENDING: {_0}")]
+    InvalidStopped(endpoint::VarInt),
 
-    #[error("session error: {0}")]
-    SessionError(#[from] SessionError),
+    #[error("session error")]
+    SessionError(#[error(source, from)] SessionError),
 
     #[error("stream closed")]
     ClosedStream,
 }
 
-impl From<iroh::endpoint::WriteError> for WriteError {
-    fn from(e: iroh::endpoint::WriteError) -> Self {
+impl From<endpoint::WriteError> for WriteError {
+    fn from(e: endpoint::WriteError) -> Self {
         match e {
-            iroh::endpoint::WriteError::Stopped(code) => {
+            endpoint::WriteError::Stopped(code) => {
                 match web_transport_proto::error_from_http3(code.into_inner()) {
                     Some(code) => WriteError::Stopped(code),
                     None => WriteError::InvalidStopped(code),
                 }
             }
-            iroh::endpoint::WriteError::ClosedStream => WriteError::ClosedStream,
-            iroh::endpoint::WriteError::ConnectionLost(e) => WriteError::SessionError(e.into()),
-            iroh::endpoint::WriteError::ZeroRttRejected => unreachable!("0-RTT not supported"),
+            endpoint::WriteError::ClosedStream => WriteError::ClosedStream,
+            endpoint::WriteError::ConnectionLost(e) => WriteError::SessionError(e.into()),
+            endpoint::WriteError::ZeroRttRejected => unreachable!("0-RTT not supported"),
         }
     }
 }
 
 /// An error when reading from [`crate::RecvStream`]. Similar to [`iroh::endpoint::ReadError`].
-#[derive(Clone, Error, Debug)]
+#[stack_error(derive, from_sources)]
+#[derive(Clone)]
 pub enum ReadError {
-    #[error("session error: {0}")]
-    SessionError(#[from] SessionError),
+    #[error("session error")]
+    SessionError(#[error(source, from)] SessionError),
 
-    #[error("RESET_STREAM: {0}")]
+    #[error("RESET_STREAM: {_0}")]
     Reset(u32),
 
-    #[error("invalid RESET_STREAM: {0}")]
-    InvalidReset(iroh::endpoint::VarInt),
+    #[error("invalid RESET_STREAM: {_0}")]
+    InvalidReset(endpoint::VarInt),
 
     #[error("stream already closed")]
     ClosedStream,
 }
 
-impl From<iroh::endpoint::ReadError> for ReadError {
-    fn from(value: iroh::endpoint::ReadError) -> Self {
+impl From<endpoint::ReadError> for ReadError {
+    fn from(value: endpoint::ReadError) -> Self {
         match value {
-            iroh::endpoint::ReadError::Reset(code) => {
+            endpoint::ReadError::Reset(code) => {
                 match web_transport_proto::error_from_http3(code.into_inner()) {
                     Some(code) => ReadError::Reset(code),
                     None => ReadError::InvalidReset(code),
                 }
             }
-            iroh::endpoint::ReadError::ConnectionLost(e) => Self::SessionError(e.into()),
-            iroh::endpoint::ReadError::ClosedStream => Self::ClosedStream,
-            iroh::endpoint::ReadError::ZeroRttRejected => unreachable!("0-RTT not supported"),
+            endpoint::ReadError::ConnectionLost(e) => Self::SessionError(e.into()),
+            endpoint::ReadError::ClosedStream => Self::ClosedStream,
+            endpoint::ReadError::ZeroRttRejected => unreachable!("0-RTT not supported"),
         }
     }
 }
 
 /// An error returned by [`crate::RecvStream::read_exact`]. Similar to [`iroh::endpoint::ReadExactError`].
-#[derive(Clone, Error, Debug)]
+#[stack_error(derive, from_sources)]
+#[derive(Clone)]
 pub enum ReadExactError {
     #[error("finished early")]
     FinishedEarly(usize),
 
-    #[error("read error: {0}")]
-    ReadError(#[from] ReadError),
+    #[error("read error")]
+    ReadError(#[error(source, from)] ReadError),
 }
 
-impl From<iroh::endpoint::ReadExactError> for ReadExactError {
-    fn from(e: iroh::endpoint::ReadExactError) -> Self {
+impl From<endpoint::ReadExactError> for ReadExactError {
+    fn from(e: endpoint::ReadExactError) -> Self {
         match e {
-            iroh::endpoint::ReadExactError::FinishedEarly(size) => {
-                ReadExactError::FinishedEarly(size)
-            }
-            iroh::endpoint::ReadExactError::ReadError(e) => ReadExactError::ReadError(e.into()),
+            endpoint::ReadExactError::FinishedEarly(size) => ReadExactError::FinishedEarly(size),
+            endpoint::ReadExactError::ReadError(e) => ReadExactError::ReadError(e.into()),
         }
     }
 }
 
 /// An error returned by [`crate::RecvStream::read_to_end`]. Similar to [`iroh::endpoint::ReadToEndError`].
-#[derive(Clone, Error, Debug)]
+#[stack_error(derive, from_sources)]
+#[derive(Clone)]
 pub enum ReadToEndError {
     #[error("too long")]
     TooLong,
 
-    #[error("read error: {0}")]
-    ReadError(#[from] ReadError),
+    #[error("read error")]
+    ReadError(#[error(source, from)] ReadError),
 }
 
-impl From<iroh::endpoint::ReadToEndError> for ReadToEndError {
-    fn from(e: iroh::endpoint::ReadToEndError) -> Self {
+impl From<endpoint::ReadToEndError> for ReadToEndError {
+    fn from(e: endpoint::ReadToEndError) -> Self {
         match e {
-            iroh::endpoint::ReadToEndError::TooLong => ReadToEndError::TooLong,
-            iroh::endpoint::ReadToEndError::Read(e) => ReadToEndError::ReadError(e.into()),
+            endpoint::ReadToEndError::TooLong => ReadToEndError::TooLong,
+            endpoint::ReadToEndError::Read(e) => ReadToEndError::ReadError(e.into()),
         }
     }
 }
 
 /// An error indicating the stream was already closed.
-#[derive(Clone, Error, Debug)]
+#[stack_error(derive)]
+#[derive(Clone)]
 #[error("stream closed")]
 pub struct ClosedStream;
 
-impl From<iroh::endpoint::ClosedStream> for ClosedStream {
-    fn from(_: iroh::endpoint::ClosedStream) -> Self {
+impl From<endpoint::ClosedStream> for ClosedStream {
+    fn from(_: endpoint::ClosedStream) -> Self {
         ClosedStream
     }
 }
@@ -189,22 +194,22 @@ pub enum ServerError {
     UnexpectedEnd,
 
     #[error("connection failed")]
-    Connection(#[error(source, std_err)] iroh::endpoint::ConnectionError),
+    Connection(#[error(source, std_err)] endpoint::ConnectionError),
 
     #[error("connection failed during handshake")]
-    Connecting(#[error(source)] Arc<iroh::endpoint::ConnectingError>),
+    Connecting(#[error(source)] Arc<endpoint::ConnectingError>),
 
     #[error("failed to write")]
-    WriteError(#[error(source, std_err)] iroh::endpoint::WriteError),
+    WriteError(#[error(source, std_err)] endpoint::WriteError),
 
     #[error("failed to read")]
-    ReadError(#[error(source, std_err)] iroh::endpoint::ReadError),
+    ReadError(#[error(source, std_err)] endpoint::ReadError),
 
     #[error("io error")]
     IoError(#[error(source)] Arc<std::io::Error>),
 
     #[error("failed to bind endpoint")]
-    Bind(#[error(source)] Arc<iroh::endpoint::BindError>),
+    Bind(#[error(source)] Arc<endpoint::BindError>),
 
     #[error("failed to exchange h3 connect")]
     HttpError(#[error(source, from, std_err)] ConnectError),
@@ -215,7 +220,7 @@ pub enum ServerError {
 
 impl web_transport_trait::Error for SessionError {
     fn session_error(&self) -> Option<(u32, String)> {
-        if let SessionError::WebTransportError(WebTransportError::Closed(code, reason)) = self {
+        if let SessionError::WebTransportError(WebTransportError::Closed { code, reason }) = self {
             return Some((*code, reason.to_string()));
         }
 

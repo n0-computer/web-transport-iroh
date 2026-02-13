@@ -1,25 +1,26 @@
-use thiserror::Error;
+use n0_error::stack_error;
 use tokio::try_join;
 
-#[derive(Error, Debug, Clone)]
+#[stack_error(derive, from_sources)]
+#[derive(Clone)]
 pub enum SettingsError {
     #[error("quic stream was closed early")]
     UnexpectedEnd,
 
-    #[error("protocol error: {0}")]
-    ProtoError(#[from] web_transport_proto::SettingsError),
+    #[error("protocol error")]
+    ProtoError(#[error(source, from, std_err)] web_transport_proto::SettingsError),
 
     #[error("WebTransport is not supported")]
     WebTransportUnsupported,
 
     #[error("connection error")]
-    ConnectionError(#[from] iroh::endpoint::ConnectionError),
+    ConnectionError(#[error(source, from, std_err)] iroh::endpoint::ConnectionError),
 
     #[error("read error")]
-    ReadError(#[from] iroh::endpoint::ReadError),
+    ReadError(#[error(source, from, std_err)] iroh::endpoint::ReadError),
 
     #[error("write error")]
-    WriteError(#[from] iroh::endpoint::WriteError),
+    WriteError(#[error(source, from, std_err)] iroh::endpoint::WriteError),
 }
 
 pub struct Settings {

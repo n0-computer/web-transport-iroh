@@ -3474,7 +3474,6 @@ dependencies = [
  "n0-error",
  "n0-future",
  "n0-tracing-test",
- "thiserror",
  "tokio",
  "tracing",
  "url",

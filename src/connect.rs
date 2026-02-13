@@ -1,30 +1,31 @@
 use std::ops::Deref;
 
 use iroh::endpoint::Connection;
-use thiserror::Error;
+use n0_error::stack_error;
 use web_transport_proto::{ConnectRequest, ConnectResponse, VarInt};
 
-#[derive(Error, Debug, Clone)]
+#[derive(Clone)]
+#[stack_error(derive, from_sources)]
 pub enum ConnectError {
     #[error("quic stream was closed early")]
     UnexpectedEnd,
 
-    #[error("protocol error: {0}")]
-    ProtoError(#[from] web_transport_proto::ConnectError),
+    #[error("protocol error")]
+    ProtoError(#[error(source, from, std_err)] web_transport_proto::ConnectError),
 
     #[error("connection error")]
-    ConnectionError(#[from] iroh::endpoint::ConnectionError),
+    ConnectionError(#[error(source, from, std_err)] iroh::endpoint::ConnectionError),
 
     #[error("read error")]
-    ReadError(#[from] iroh::endpoint::ReadError),
+    ReadError(#[error(source, from, std_err)] iroh::endpoint::ReadError),
 
     #[error("write error")]
-    WriteError(#[from] iroh::endpoint::WriteError),
+    WriteError(#[error(source, from, std_err)] iroh::endpoint::WriteError),
 
-    #[error("http error status: {0}")]
+    #[error("http error status: {_0}")]
     ErrorStatus(http::StatusCode),
 
-    #[error("server returned protocol not in request: {0}")]
+    #[error("server returned protocol not in request: {_0}")]
     ProtocolMismatch(String),
 }
 

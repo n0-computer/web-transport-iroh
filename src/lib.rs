@@ -49,5 +49,7 @@ pub const ALPN_H3: &str = "h3";
 pub use http;
 /// Re-export iroh.
 pub use iroh;
+/// Re-export the WebTransport protocol implementation.
+pub use web_transport_proto as proto;
 /// Re-export the generic WebTransport implementation.
 pub use web_transport_trait as generic;

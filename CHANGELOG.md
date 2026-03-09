@@ -1,6 +1,16 @@
 # Changelog
 
-## [0.2.1](https://github.com/n0-computer/web-transport-iroh/compare/v0.2.0..0.2.1) - 2026-02-13
+## [0.2.2](https://github.com/n0-computer/web-transport-iroh/compare/v0.2.1..0.2.2) - 2026-03-09
+
+### ⛰️  Features
+
+- Re-export web-transport-proto as proto ([#1](https://github.com/n0-computer/web-transport-iroh/issues/1)) - ([e9471f5](https://github.com/n0-computer/web-transport-iroh/commit/e9471f545c7e5be196e1a38c6e4b747d132e1489))
+
+### 🐛 Bug Fixes
+
+- More Debug impls - ([4f423a7](https://github.com/n0-computer/web-transport-iroh/commit/4f423a70f70a4453da3a9f178904b807fb3ab730))
+
+## [0.2.1](https://github.com/n0-computer/web-transport-iroh/compare/v0.2.0..v0.2.1) - 2026-02-13
 
 ### Deps
 

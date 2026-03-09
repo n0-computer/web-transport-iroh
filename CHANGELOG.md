@@ -10,6 +10,10 @@
 
 - More Debug impls - ([4f423a7](https://github.com/n0-computer/web-transport-iroh/commit/4f423a70f70a4453da3a9f178904b807fb3ab730))
 
+### ⚙️ Miscellaneous Tasks
+
+- Prepare 0.2.2 release - ([ea3d5da](https://github.com/n0-computer/web-transport-iroh/commit/ea3d5daaf559a43c9a1540740f7a618ab9824773))
+
 ## [0.2.1](https://github.com/n0-computer/web-transport-iroh/compare/v0.2.0..v0.2.1) - 2026-02-13
 
 ### Deps

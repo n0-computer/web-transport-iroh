@@ -8,14 +8,15 @@ use crate::{ALPN_H3, Client, H3Request, QuicRequest, SessionError};
 #[tokio::test]
 #[traced_test]
 async fn h3_smoke() -> n0_error::Result<()> {
-    let client = Endpoint::bind()
+    let client = Endpoint::empty_builder()
+        .bind()
         .instrument(tracing::error_span!("client-ep"))
         .await
         .unwrap();
     let client_id = client.id();
     let client = Client::new(client);
 
-    let server = Endpoint::builder()
+    let server = Endpoint::empty_builder()
         .alpns(vec![ALPN_H3.as_bytes().to_vec()])
         .bind()
         .instrument(tracing::error_span!("server-ep"))
@@ -79,11 +80,11 @@ async fn h3_smoke() -> n0_error::Result<()> {
 async fn quic_smoke() -> n0_error::Result<()> {
     const ALPN: &str = "moql";
 
-    let client = Endpoint::bind().await.unwrap();
+    let client = Endpoint::empty_builder().bind().await.unwrap();
     let client_id = client.id();
     let client = Client::new(client);
 
-    let server = Endpoint::builder()
+    let server = Endpoint::empty_builder()
         .alpns(vec![ALPN.as_bytes().to_vec()])
         .bind()
         .await
@@ -103,7 +104,8 @@ async fn quic_smoke() -> n0_error::Result<()> {
             let reason = session.closed().await;
             assert!(
                 matches!(reason, SessionError::ConnectionError(ConnectionError::ApplicationClosed(frame)) if frame.error_code.into_inner() == 23)
-            )
+            );
+            client.close().await;
         }.instrument(tracing::error_span!("client"))
     });
 
@@ -117,6 +119,7 @@ async fn quic_smoke() -> n0_error::Result<()> {
             assert!(session.request().is_none());
             assert_eq!(session.conn().remote_id(), client_id);
             session.close(23, b"bye");
+            server.close().await;
         }
         .instrument(tracing::error_span!("server"))
     });

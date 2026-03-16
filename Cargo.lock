@@ -3545,7 +3545,6 @@ dependencies = [
 name = "web-transport-iroh"
 version = "0.2.2"
 dependencies = [
- "anyhow",
  "bytes",
  "clap",
  "derive_more",

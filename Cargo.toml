@@ -27,7 +27,6 @@ web-transport-proto = "0.5.4"
 web-transport-trait = "0.3.3"
 
 [dev-dependencies]
-anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 n0-tracing-test = "0.3.0"
 tokio = { version = "1", features = ["full"] }

@@ -1,5 +1,8 @@
-[![crates.io](https://img.shields.io/crates/v/web-transport-iroh)](https://crates.io/crates/web-transport-iroh)
-[![docs.rs](https://img.shields.io/docsrs/web-transport-iroh)](https://docs.rs/web-transport-iroh)
+## This crate has been moved into the [moq-dev/web-transport](https://github.com/moq-dev/web-transport/tree/main/rs/web-transport-iroh) repo.
+
+This repository is now archived. Please use the new repo for all issues or pull requests.
+
+---
 
 # web-transport-iroh
 
